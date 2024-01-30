@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { UserModule } from './user/user.module';
 import configuration from './config/configuration';
 // process.env.MONGODB_URI
 
@@ -19,6 +20,7 @@ import configuration from './config/configuration';
       envFilePath: '.env',
       isGlobal: true,
     }),
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],
