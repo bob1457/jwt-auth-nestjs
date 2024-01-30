@@ -4,12 +4,21 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import configuration from './config/configuration';
+// process.env.MONGODB_URI
 
 @Module({
   imports: [
-    MongooseModule.forRoot(process.env.MONGODB_URI),
+    MongooseModule.forRoot(
+      'mongodb://admin:password123@localhost:27017/authmon?authSource=admin',
+      // `${process.env.MONGODB_URI}`,
+    ),
     AuthModule,
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      load: [configuration],
+      envFilePath: '.env',
+      isGlobal: true,
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],
