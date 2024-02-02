@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { SignInDto } from './dto/signIn.dto';
 import { User } from './schemas/user.schema';
@@ -6,8 +10,10 @@ import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { InjectModel } from '@nestjs/mongoose';
 
-const EXPIRE_TIME = 20 * 1000;
-const SECRET_KEY = 'secretKey';
+const AT_EXPIRE_TIME = 3600 * 1000 * 24;
+const RT_EXPIRE_TIME = 3600 * 1000 * 24 * 7;
+const AT_SECRET_KEY = 'secretKey';
+const RT_SECRET_KEY = 'secretKey2';
 
 @Injectable()
 export class AuthService {
@@ -22,35 +28,53 @@ export class AuthService {
     const user = await this.userModel.findOne({ email: signInDto.email });
     // console.log('user found', user);
 
+    // check if user email verified
+    if (!user.emailVerified) {
+      throw new BadRequestException('Please verify your email');
+    }
+
     if (user && bcrypt.compare(user.password, signInDto.password)) {
       const payload = {
         email: user.email,
         sub: user._id,
       };
 
+      const access_token = this.jwtService.sign(payload, {
+        secret: AT_SECRET_KEY,
+        expiresIn: AT_EXPIRE_TIME,
+      });
+
+      const refresh_token = this.jwtService.sign(payload, {
+        secret: RT_SECRET_KEY,
+        expiresIn: RT_EXPIRE_TIME,
+      });
+
+      // update the refresh token in the database
+      user.refreshToken = refresh_token;
+      try {
+        await user.save();
+      } catch (error) {
+        throw new Error('Error updating refresh token');
+      }
+
       return {
         user,
         Tokens: {
-          access_token: this.jwtService.sign(payload, {
-            secret: SECRET_KEY,
-            expiresIn: EXPIRE_TIME,
-          }),
-          refresh_token: this.jwtService.sign(payload, {
-            secret: SECRET_KEY,
-            expiresIn: EXPIRE_TIME,
-          }),
+          access_token,
+          refresh_token,
         },
       };
     }
-    return new Error('Incorrect email or password');
+    // return new Error('Incorrect email or password');
+    throw new UnauthorizedException();
   }
 
-  async signUp(signInDto: SignInDto) {
+  async signUp(signInDto: SignInDto): Promise<any> {
     // check if the user already exists
     const user = await this.userModel.findOne({ email: signInDto.email });
     // console.log('existing user', user);
     if (user) {
-      throw new Error('User already exists');
+      throw new BadRequestException('User already exists');
     }
 
     // hash password
@@ -64,5 +88,30 @@ export class AuthService {
     });
 
     return newUser.save();
+  }
+
+  async refresToken(token: string) {
+    try {
+      const decoded = this.jwtService.verify(token, {
+        secret: RT_SECRET_KEY,
+      });
+      const payload = {
+        email: decoded.email,
+        sub: decoded.sub,
+      };
+
+      return {
+        access_token: this.jwtService.sign(payload, {
+          secret: AT_SECRET_KEY,
+          expiresIn: AT_EXPIRE_TIME,
+        }),
+        refresToken: this.jwtService.sign(payload, {
+          secret: RT_SECRET_KEY,
+          expiresIn: RT_EXPIRE_TIME,
+        }),
+      };
+    } catch (error) {
+      throw new UnauthorizedException();
+    }
   }
 }
