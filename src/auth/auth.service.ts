@@ -9,6 +9,7 @@ import { User } from './schemas/user.schema';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { InjectModel } from '@nestjs/mongoose';
+import * as crypto from 'crypto';
 
 const AT_EXPIRE_TIME = 3600 * 1000 * 24;
 const RT_EXPIRE_TIME = 3600 * 1000 * 24 * 7;
@@ -50,6 +51,9 @@ export class AuthService {
       });
 
       // update the refresh token in the database
+      // ****************************
+      // another consideration is return this refersh token, together with
+      // the access token, to the client that then stored in local storage
       user.refreshToken = refresh_token;
       try {
         await user.save();
@@ -100,18 +104,73 @@ export class AuthService {
         sub: decoded.sub,
       };
 
+      const access_token = this.jwtService.sign(payload, {
+        secret: AT_SECRET_KEY,
+        expiresIn: AT_EXPIRE_TIME,
+      });
+
+      const refresh_token = this.jwtService.sign(payload, {
+        secret: RT_SECRET_KEY,
+        expiresIn: RT_EXPIRE_TIME,
+      });
+
+      // update user refresh token
+      // ****************************
+      // another consideration is return this refersh token
+      // to the client that then stored in local storage
+      try {
+        await this.userModel.findOneAndUpdate(
+          { email: payload.email },
+          { refreshToken: refresh_token },
+        );
+      } catch (error) {
+        throw new Error('Error updating refresh token');
+      }
+
       return {
-        access_token: this.jwtService.sign(payload, {
-          secret: AT_SECRET_KEY,
-          expiresIn: AT_EXPIRE_TIME,
-        }),
-        refresToken: this.jwtService.sign(payload, {
-          secret: RT_SECRET_KEY,
-          expiresIn: RT_EXPIRE_TIME,
-        }),
+        access_token,
+        refresh_token,
       };
     } catch (error) {
       throw new UnauthorizedException();
     }
+  }
+
+  async verifyEmail(token: string) {
+    const user = await this.userModel.findOne({
+      emailVerificaitonToken: token,
+    });
+    if (user) {
+      user.emailVerified = true;
+      user.emailVerificaitonToken = undefined;
+      try {
+        await user.save();
+      } catch (error) {
+        throw new Error('Error verifying email');
+      }
+    }
+
+    throw new BadRequestException('Invalid token');
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.userModel.findOne({ email });
+
+    if (user) {
+      // create a reset token
+      const resetPasswordToken = crypto.randomBytes(32).toString('hex');
+      // const resetPasswordExpiry = Date.now() + 3600000; // 60 minutes
+
+      user.resetPasswordToken = resetPasswordToken;
+      // user.resetPasswordExpire = resetPasswordExpiry;
+
+      try {
+        await user.save();
+      } catch (error) {
+        throw new Error('Error creating reset token');
+      }
+    }
+
+    throw new BadRequestException('Invalid email');
   }
 }

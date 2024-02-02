@@ -16,3 +16,9 @@ content-type: application/json
   "email": "jack@gmail.com",
   "password": "123456"
 }
+
+###
+
+GET http://localhost:5000/user HTTP/1.1
+content-type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImphY2tAZ21haWwuY29tIiwic3ViIjoiNjViZDNiN2IzYTUxNjA5MTA3MGYzMTA5IiwiaWF0IjoxNzA2OTE2NTExLCJleHAiOjE3OTMzMTY1MTF9.SV57eG8TSmqE8rdQTvVBu6Znqj-JlBmPU8oivN846qs
