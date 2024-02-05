@@ -8,7 +8,7 @@ export class UserController {
   constructor(private userService: UserService) {}
 
   @UseGuards(JwtGuard)
-  @Get()
+  @Get('all')
   async getUsers(): Promise<User[]> {
     return this.userService.getAllUsers();
   }

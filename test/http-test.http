@@ -19,6 +19,12 @@ content-type: application/json
 
 ###
 
-GET http://localhost:5000/user HTTP/1.1
+POST http://localhost:5000/auth/refresh HTTP/1.1
+content-type: application/json
+Authorization: Refresh eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImphY2tAZ21haWwuY29tIiwic3ViIjoiNjViZDNiN2IzYTUxNjA5MTA3MGYzMTA5IiwiaWF0IjoxNzA3MTUzMDc3LCJleHAiOjIzMTE5NTMwNzd9._skCaMyoz-8YQBYV2oFr0gjmZbmZdvaBmSu-46qKCv8
+
+###
+
+GET http://localhost:5000/user/all HTTP/1.1
 content-type: application/json
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImphY2tAZ21haWwuY29tIiwic3ViIjoiNjViZDNiN2IzYTUxNjA5MTA3MGYzMTA5IiwiaWF0IjoxNzA2OTE2NTExLCJleHAiOjE3OTMzMTY1MTF9.SV57eG8TSmqE8rdQTvVBu6Znqj-JlBmPU8oivN846qs
