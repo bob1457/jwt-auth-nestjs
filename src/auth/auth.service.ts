@@ -10,17 +10,24 @@ import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { InjectModel } from '@nestjs/mongoose';
 import * as crypto from 'crypto';
+import { ConfigService } from '@nestjs/config';
 
-const AT_EXPIRE_TIME = 3600 * 1000 * 24;
-const RT_EXPIRE_TIME = 3600 * 1000 * 24 * 7;
-const AT_SECRET_KEY = 'secretKey';
-const RT_SECRET_KEY = 'secretKey2';
+// const AT_EXPIRE_TIME = process.env.AT_EXPIRE_TIME; // 3600 * 1000 * 24;
+// const RT_EXPIRE_TIME = process.env.RT_EXPIRE_TIME; //3600 * 1000 * 24 * 7;
+// const AT_SECRET_KEY = process.env.AT_SECRET_KEY; // 'secretKey';
+// const RT_SECRET_KEY = process.env.RT_SECRET_KEY; //'secretKey2';
+
+const AT_EXPIRE_TIME = '1d'; //3600 * 1000 * 24;
+const RT_EXPIRE_TIME = '7d'; //3600 * 1000 * 24 * 7;
+// const AT_SECRET_KEY = 'secretKey';
+// const RT_SECRET_KEY = 'secretKey2';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     private jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async signIn(signInDto: SignInDto) {
@@ -41,13 +48,13 @@ export class AuthService {
       };
 
       const access_token = this.jwtService.sign(payload, {
-        secret: AT_SECRET_KEY,
-        expiresIn: AT_EXPIRE_TIME,
+        secret: this.configService.get<string>('AT_SECRET_KEY'), // AT_SECRET_KEY,
+        expiresIn: AT_EXPIRE_TIME, //this.configService.get<number>('AT_EXPIRE_TIME'), //,
       });
 
       const refresh_token = this.jwtService.sign(payload, {
-        secret: RT_SECRET_KEY,
-        expiresIn: RT_EXPIRE_TIME,
+        secret: this.configService.get<string>('RT_SECRET_KEY'), //RT_SECRET_KEY,
+        expiresIn: RT_EXPIRE_TIME, //this.configService.get<number>('RT_EXPIRE_TIME'), //
       });
 
       // update the refresh token in the database
@@ -127,12 +134,36 @@ export class AuthService {
           { email: user.email },
           { resetPasswordToken, resetPasswordExpire },
         );
+        // send the reset password token to the user's email
       } catch (error) {
         throw new Error('Error creating reset token');
       }
     }
 
     throw new BadRequestException('Invalid email');
+  }
+
+  async resetPassword(token: string, password: string) {
+    const user = await this.userModel.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Invalid or expired token');
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    user.password = hashedPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+
+    try {
+      await user.save();
+    } catch (error) {
+      throw new Error('Error resetting password');
+    }
   }
 
   async refreshToken(user: any) {
@@ -143,12 +174,12 @@ export class AuthService {
       };
 
       const access_token = this.jwtService.sign(payload, {
-        secret: AT_SECRET_KEY,
+        secret: this.configService.get<string>('AT_SECRET_KEY'),
         expiresIn: AT_EXPIRE_TIME,
       });
 
       const refresh_token = this.jwtService.sign(payload, {
-        secret: RT_SECRET_KEY,
+        secret: this.configService.get<string>('RT_SECRET_KEY'),
         expiresIn: RT_EXPIRE_TIME,
       });
 

@@ -15,7 +15,7 @@ export class JwtGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
 
-    const AT_SECRET_KEY = 'secretKey'; //process.env.jwtSecretKey;
+    const AT_SECRET_KEY = 'secretKey'; //process.env.AT_SECRET_KEY; //; //process.env.jwtSecretKey;
 
     if (!token) throw new UnauthorizedException();
 

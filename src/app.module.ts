@@ -10,16 +10,13 @@ import configuration from './config/configuration';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(
-      'mongodb://admin:password123@localhost:27017/authmon?authSource=admin',
-      // `${process.env.MONGODB_URI}`,
-    ),
-    AuthModule,
     ConfigModule.forRoot({
-      load: [configuration],
-      envFilePath: '.env',
       isGlobal: true,
+      load: [configuration],
     }),
+    MongooseModule.forRoot(process.env.MONGODB_URI),
+    AuthModule,
+
     UserModule,
   ],
   controllers: [AppController],
