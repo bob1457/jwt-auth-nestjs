@@ -11,6 +11,8 @@ import * as bcrypt from 'bcrypt';
 import { InjectModel } from '@nestjs/mongoose';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
+import { ForgotPasswordDto } from './dto/forgotPassword.dto';
+import { NewPassWordDto } from './dto/newPassword.dto';
 
 // const AT_EXPIRE_TIME = process.env.AT_EXPIRE_TIME; // 3600 * 1000 * 24;
 // const RT_EXPIRE_TIME = process.env.RT_EXPIRE_TIME; //3600 * 1000 * 24 * 7;
@@ -91,20 +93,34 @@ export class AuthService {
     // hash password
     const hashedPassword = await bcrypt.hash(signInDto.password, 10);
 
+    // generate email verification token and send to user's email
+    const emailVerificaitonToken = crypto.randomBytes(32).toString('hex');
+    const emailVerificationUrl =
+      'http://localhost:5000/verifyemail/' + emailVerificaitonToken;
     // create new user
 
     const newUser = new this.userModel({
       ...signInDto,
       password: hashedPassword,
+      emailVerificaitonToken,
     });
+
+    console.log(emailVerificationUrl);
+
+    // send email to user
+    // await sendEmail({})
 
     return newUser.save();
   }
 
   async verifyEmail(token: string) {
+    // console.log('token received', token);
+
     const user = await this.userModel.findOne({
       emailVerificaitonToken: token,
     });
+
+    // console.log('found user', user);
     if (user) {
       user.emailVerified = true;
       user.emailVerificaitonToken = undefined;
@@ -118,32 +134,33 @@ export class AuthService {
     throw new BadRequestException('Invalid token');
   }
 
-  async forgotPassword(email: string) {
-    const user = await this.userModel.findOne({ email });
+  async forgotPassword(email: ForgotPasswordDto) {
+    console.log('recived email', email.email);
+    const user = await this.userModel.findOne({ email: email.email });
+    console.log('found user', user);
 
-    if (user) {
-      // create a reset token
-      const resetPasswordToken = crypto.randomBytes(32).toString('hex');
-      const resetPasswordExpire = Date.now() + 3600000; // 60 minutes
+    if (!user) throw new BadRequestException('Invalid email');
 
-      user.resetPasswordToken = resetPasswordToken;
-      // user.resetPasswordExpire = resetPasswordExpiry;
+    const resetPasswordToken = crypto.randomBytes(32).toString('hex');
+    const resetPasswordExpire = Date.now() + 3600000; // 60 minutes
 
-      try {
-        await this.userModel.findOneAndUpdate(
-          { email: user.email },
-          { resetPasswordToken, resetPasswordExpire },
-        );
-        // send the reset password token to the user's email
-      } catch (error) {
-        throw new Error('Error creating reset token');
-      }
+    user.resetPasswordToken = resetPasswordToken;
+    // user.resetPasswordExpire = resetPasswordExpiry;
+
+    try {
+      await this.userModel.findOneAndUpdate(
+        { email: user.email },
+        { resetPasswordToken, resetPasswordExpire },
+      );
+      // send the reset password token to the user's email
+    } catch (error) {
+      throw new Error('Error creating reset token');
     }
-
-    throw new BadRequestException('Invalid email');
   }
 
-  async resetPassword(token: string, password: string) {
+  async resetPassword(token: string, password: NewPassWordDto) {
+    console.log('token received', token);
+    console.log('new password', password.password);
     const user = await this.userModel.findOne({
       resetPasswordToken: token,
       resetPasswordExpire: { $gt: Date.now() },
@@ -153,7 +170,7 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired token');
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password.password, 10);
 
     user.password = hashedPassword;
     user.resetPasswordToken = undefined;

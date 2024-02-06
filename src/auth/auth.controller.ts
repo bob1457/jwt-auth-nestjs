@@ -11,6 +11,8 @@ import { AuthService } from './auth.service';
 import { SignInDto } from './dto/signIn.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { RefreshJwtGuard } from './guards/refresh_guard';
+import { ForgotPasswordDto } from './dto/forgotPassword.dto';
+import { NewPassWordDto } from './dto/newPassword.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -40,14 +42,14 @@ export class AuthController {
   }
 
   @Post('forgotpassword')
-  async forgotpassword(@Body('email') email: string) {
+  async forgotpassword(@Body() email: ForgotPasswordDto) {
     return await this.authService.forgotPassword(email);
   }
 
   @Post('resetpassword/:token')
   async resetpassword(
     @Param('token') token: string,
-    @Body() newPassword: string,
+    @Body() newPassword: NewPassWordDto,
   ) {
     return await this.authService.resetPassword(token, newPassword);
   }
