@@ -19,8 +19,8 @@ import { NewPassWordDto } from './dto/newPassword.dto';
 // const AT_SECRET_KEY = process.env.AT_SECRET_KEY; // 'secretKey';
 // const RT_SECRET_KEY = process.env.RT_SECRET_KEY; //'secretKey2';
 
-const AT_EXPIRE_TIME = '1d'; //3600 * 1000 * 24;
-const RT_EXPIRE_TIME = '7d'; //3600 * 1000 * 24 * 7;
+const AT_EXPIRE_TIME = 3600 * 1000 * 24;
+const RT_EXPIRE_TIME = 3600 * 1000 * 24 * 7;
 // const AT_SECRET_KEY = 'secretKey';
 // const RT_SECRET_KEY = 'secretKey2';
 
