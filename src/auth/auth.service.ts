@@ -54,7 +54,10 @@ export class AuthService {
         expiresIn: AT_EXPIRE_TIME, //this.configService.get<number>('AT_EXPIRE_TIME'), //,
       });
 
-      const access_token_expires_in = Date.now() + 900000; // 60 minutes
+      const decodedToken = this.jwtService.decode(access_token);
+      console.log('generatedToken', decodedToken);
+
+      const access_token_expires_in = decodedToken.exp;
 
       const refresh_token = this.jwtService.sign(payload, {
         secret: this.configService.get<string>('RT_SECRET_KEY'), //RT_SECRET_KEY,
