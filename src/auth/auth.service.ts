@@ -19,8 +19,8 @@ import { NewPassWordDto } from './dto/newPassword.dto';
 // const AT_SECRET_KEY = process.env.AT_SECRET_KEY; // 'secretKey';
 // const RT_SECRET_KEY = process.env.RT_SECRET_KEY; //'secretKey2';
 
-const AT_EXPIRE_TIME = 3600 * 1000 * 24;
-const RT_EXPIRE_TIME = 3600 * 1000 * 24 * 7;
+const AT_EXPIRE_TIME = '15m'; //3600 * 1000 * 24;
+const RT_EXPIRE_TIME = '7d'; //3600 * 1000 * 24 * 7;
 // const AT_SECRET_KEY = 'secretKey';
 // const RT_SECRET_KEY = 'secretKey2';
 
@@ -54,6 +54,8 @@ export class AuthService {
         expiresIn: AT_EXPIRE_TIME, //this.configService.get<number>('AT_EXPIRE_TIME'), //,
       });
 
+      const access_token_expires_in = Date.now() + 900000; // 60 minutes
+
       const refresh_token = this.jwtService.sign(payload, {
         secret: this.configService.get<string>('RT_SECRET_KEY'), //RT_SECRET_KEY,
         expiresIn: RT_EXPIRE_TIME, //this.configService.get<number>('RT_EXPIRE_TIME'), //
@@ -74,6 +76,7 @@ export class AuthService {
         user,
         Tokens: {
           access_token,
+          access_token_expires_in,
           refresh_token,
         },
       };
